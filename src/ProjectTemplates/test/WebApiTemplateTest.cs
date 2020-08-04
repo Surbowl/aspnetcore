@@ -61,7 +61,7 @@ namespace Templates.Test
 
         private async Task PublishAndBuildWebApiTemplate(string languageOverride, string auth, string[] args)
         {
-            Project = await FactoryFixture.GetOrCreateProject("webapi" + (languageOverride == "F#" ? "fsharp" : "csharp") + Guid.NewGuid().ToString().Substring(0, 10).ToLower(), Output);
+            Project = await FactoryFixture.GetOrCreateProject("webapi" + (languageOverride == "F#" ? "fsharp" : "csharp") + Guid.NewGuid().ToString().Substring(0, 10).ToLowerInvariant(), Output);
 
             var createResult = await Project.RunDotNetNewAsync("webapi", language: languageOverride, auth: auth, args: args);
             Assert.True(0 == createResult.ExitCode, ErrorMessages.GetFailedProcessMessage("create/restore", Project, createResult));

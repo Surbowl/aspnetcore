@@ -236,7 +236,7 @@ namespace Templates.Test
 
         private async Task BuildAndPublishRazorPagesTemplate(string auth, string[] args)
         {
-            Project = await ProjectFactory.GetOrCreateProject("razorpages" + Guid.NewGuid().ToString().Substring(0, 10).ToLower(), Output);
+            Project = await ProjectFactory.GetOrCreateProject("razorpages" + Guid.NewGuid().ToString().Substring(0, 10).ToLowerInvariant(), Output);
 
             var createResult = await Project.RunDotNetNewAsync("razor", auth: auth, args: args);
             Assert.True(0 == createResult.ExitCode, ErrorMessages.GetFailedProcessMessage("create/restore", Project, createResult));
