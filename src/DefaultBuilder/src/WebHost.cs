@@ -117,6 +117,7 @@ namespace Microsoft.AspNetCore
 
         /// <summary>
         /// Initializes a new instance of the <see cref="WebHostBuilder"/> class with pre-configured defaults.
+        /// 实例化一个使用默认配置的 <see cref="WebHostBuilder"/>
         /// </summary>
         /// <remarks>
         ///   The following defaults are applied to the returned <see cref="WebHostBuilder"/>:
@@ -129,6 +130,16 @@ namespace Microsoft.AspNetCore
         ///     adds the HostFiltering middleware,
         ///     adds the ForwardedHeaders middleware if ASPNETCORE_FORWARDEDHEADERS_ENABLED=true,
         ///     and enable IIS integration.
+        ///   返回的 <see cref="WebHostBuilder"/> 将应用以下默认值:
+        ///     使用 Kestrel 作为 web server，并使用当前应用的 configuration providers，
+        ///     将 <see cref="IHostEnvironment.ContentRootPath"/> 作为 <see cref="Directory.GetCurrentDirectory()"/> 方法的返回值，
+        ///     从 “appsettings.json” 和 “appsettings.[<see cref="IHostEnvironment.EnvironmentName"/>].json” 中加载 <see cref="IConfiguration"/>，
+        ///     若程序集入口 <see cref="IHostEnvironment.EnvironmentName"/> 为 “Development” ，从 User Secrets 中加载 <see cref="IConfiguration"/>
+        ///     从环境变量中加载 <see cref="IConfiguration"/>
+        ///     使用 <see cref="ILoggerFactory"/> 记录日志，并在 console 与 debug 输出，
+        ///     添加 HostFiltering 中间件
+        ///     如果 ASPNETCORE_FORWARDEDHEADERS_ENABLED=true，添加 ForwardedHeaders 中间件
+        ///     启用 IIS 集成。
         /// </remarks>
         /// <returns>The initialized <see cref="IWebHostBuilder"/>.</returns>
         public static IWebHostBuilder CreateDefaultBuilder() =>
@@ -136,6 +147,7 @@ namespace Microsoft.AspNetCore
 
         /// <summary>
         /// Initializes a new instance of the <see cref="WebHostBuilder"/> class with pre-configured defaults.
+        /// 实例化一个使用默认配置的 <see cref="WebHostBuilder"/>
         /// </summary>
         /// <remarks>
         ///   The following defaults are applied to the returned <see cref="WebHostBuilder"/>:
@@ -150,6 +162,16 @@ namespace Microsoft.AspNetCore
         ///     adds the HostFiltering middleware,
         ///     adds the ForwardedHeaders middleware if ASPNETCORE_FORWARDEDHEADERS_ENABLED=true,
         ///     and enable IIS integration.
+        ///   返回的 <see cref="WebHostBuilder"/> 将应用以下默认值:
+        ///     使用 Kestrel 作为 web server，并使用当前应用的 configuration providers，
+        ///     将 <see cref="IHostEnvironment.ContentRootPath"/> 作为 <see cref="Directory.GetCurrentDirectory()"/> 方法的返回值，
+        ///     从 “appsettings.json” 和 “appsettings.[<see cref="IHostEnvironment.EnvironmentName"/>].json” 中加载 <see cref="IConfiguration"/>，
+        ///     若 <see cref="IHostEnvironment.EnvironmentName"/> 为 “Development” ，从 User Secrets 中加载 <see cref="IConfiguration"/>
+        ///     从环境变量中加载 <see cref="IConfiguration"/>
+        ///     使用 <see cref="ILoggerFactory"/> 记录日志，并在 console 与 debug 输出，
+        ///     添加 HostFiltering 中间件
+        ///     如果 ASPNETCORE_FORWARDEDHEADERS_ENABLED=true，添加 ForwardedHeaders 中间件
+        ///     启用 IIS 集成。
         /// </remarks>
         /// <param name="args">The command line args.</param>
         /// <returns>The initialized <see cref="IWebHostBuilder"/>.</returns>
@@ -157,22 +179,28 @@ namespace Microsoft.AspNetCore
         {
             var builder = new WebHostBuilder();
 
+            // 如果环境变量未定义 ASPNETCORE_CONTENTROOT，则使用 Directory.GetCurrentDirectory() 的值
             if (string.IsNullOrEmpty(builder.GetSetting(WebHostDefaults.ContentRootKey)))
             {
                 builder.UseContentRoot(Directory.GetCurrentDirectory());
             }
+            // 如果有命令行参数，添加到 IConfiguration 中
             if (args != null)
             {
                 builder.UseConfiguration(new ConfigurationBuilder().AddCommandLine(args).Build());
             }
-
+            // 注意，上面的 builder.UseConfiguration() 方法与下面的 ConfigureAppConfiguration() 委托修改的不是同一个 IConfiguration
+            // 前者用于构建 Host，后者为 Controller 依赖注入时的 IConfiguration
+            // 后者包含前者的值，详见 WebHostBuilder.cs 第 306 行
             builder.ConfigureAppConfiguration((hostingContext, config) =>
             {
                 var env = hostingContext.HostingEnvironment;
 
+                // 添加 appsettings.*.json 配置文件
                 config.AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
                       .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true, reloadOnChange: true);
 
+                // 如果是开发环境，添加 User Secrets
                 if (env.IsDevelopment())
                 {
                     var appAssembly = Assembly.Load(new AssemblyName(env.ApplicationName));
@@ -182,8 +210,11 @@ namespace Microsoft.AspNetCore
                     }
                 }
 
+                // 添加环境变量
                 config.AddEnvironmentVariables();
 
+                // 如果有命令行参数，添加到 IConfiguration 中
+                // 此处实现的功能似乎与 190 行重复了......
                 if (args != null)
                 {
                     config.AddCommandLine(args);

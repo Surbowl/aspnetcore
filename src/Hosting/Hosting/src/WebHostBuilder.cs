@@ -30,8 +30,17 @@ namespace Microsoft.AspNetCore.Hosting
         private readonly IConfiguration _config;
         private readonly WebHostBuilderContext _context;
 
+        /// <summary>
+        /// Web 托管选项，执行 <see cref="Build"/> 的过程中在方法 <see cref="BuildCommonServices"/> 内实例化
+        /// </summary>
         private WebHostOptions? _options;
+        /// <summary>
+        /// 是否执行过 <see cref="Build"/>
+        /// </summary>
         private bool _webHostBuilt;
+        /// <summary>
+        /// 用于配置 host 或 web 应用附加服务的委托
+        /// </summary>
         private Action<WebHostBuilderContext, IServiceCollection>? _configureServices;
         private Action<WebHostBuilderContext, IConfigurationBuilder>? _configureAppConfigurationBuilder;
 
@@ -43,9 +52,10 @@ namespace Microsoft.AspNetCore.Hosting
             _hostingEnvironment = new HostingEnvironment();
 
             _config = new ConfigurationBuilder()
-                .AddEnvironmentVariables(prefix: "ASPNETCORE_")
+                .AddEnvironmentVariables(prefix: "ASPNETCORE_") // 添加带有 “ASPNETCORE_” 前缀的环境变量
                 .Build();
 
+            // 如果没有配置 ASPNETCORE_ENVIRONMENT，则使用 Hosting:Environment 或 ASPNET_ENV
             if (string.IsNullOrEmpty(GetSetting(WebHostDefaults.EnvironmentKey)))
             {
                 // Try adding legacy environment keys, never remove these.
@@ -53,6 +63,7 @@ namespace Microsoft.AspNetCore.Hosting
                     ?? Environment.GetEnvironmentVariable("ASPNET_ENV"));
             }
 
+            // 如果没有配置 ASPNETCORE_URLS，则使用 ASPNETCORE_SERVER.URLS
             if (string.IsNullOrEmpty(GetSetting(WebHostDefaults.ServerUrlsKey)))
             {
                 // Try adding legacy url key, never remove this.
@@ -67,6 +78,7 @@ namespace Microsoft.AspNetCore.Hosting
 
         /// <summary>
         /// Get the setting value from the configuration.
+        /// 从 IConfiguration 中获取 key 的对应值
         /// </summary>
         /// <param name="key">The key of the setting to look up.</param>
         /// <returns>The value the setting currently contains.</returns>
@@ -77,6 +89,7 @@ namespace Microsoft.AspNetCore.Hosting
 
         /// <summary>
         /// Add or replace a setting in the configuration.
+        /// 向 IConfiguration 中添加键值对
         /// </summary>
         /// <param name="key">The key of the setting to add or replace.</param>
         /// <param name="value">The value of the setting to add or replace.</param>
@@ -90,6 +103,7 @@ namespace Microsoft.AspNetCore.Hosting
         /// <summary>
         /// Adds a delegate for configuring additional services for the host or web application. This may be called
         /// multiple times.
+        /// 添加用于配置 host 或 web 应用附加服务的委托。该方法返回当前 <see cref="IWebHostBuilder"/> 实例，可多次调用。
         /// </summary>
         /// <param name="configureServices">A delegate for configuring the <see cref="IServiceCollection"/>.</param>
         /// <returns>The <see cref="IWebHostBuilder"/>.</returns>
@@ -106,17 +120,20 @@ namespace Microsoft.AspNetCore.Hosting
         /// <summary>
         /// Adds a delegate for configuring additional services for the host or web application. This may be called
         /// multiple times.
+        /// 添加用于配置 host 或 web 应用附加服务的委托。该方法返回当前 <see cref="IWebHostBuilder"/> 实例，可多次调用。
         /// </summary>
         /// <param name="configureServices">A delegate for configuring the <see cref="IServiceCollection"/>.</param>
         /// <returns>The <see cref="IWebHostBuilder"/>.</returns>
         public IWebHostBuilder ConfigureServices(Action<WebHostBuilderContext, IServiceCollection> configureServices)
         {
+            // 添加委托
             _configureServices += configureServices;
             return this;
         }
 
         /// <summary>
         /// Adds a delegate for configuring the <see cref="IConfigurationBuilder"/> that will construct an <see cref="IConfiguration"/>.
+        /// 添加用于修改配置的委托
         /// </summary>
         /// <param name="configureDelegate">The delegate for configuring the <see cref="IConfigurationBuilder" /> that will be used to construct an <see cref="IConfiguration" />.</param>
         /// <returns>The <see cref="IWebHostBuilder"/>.</returns>
@@ -132,19 +149,24 @@ namespace Microsoft.AspNetCore.Hosting
 
         /// <summary>
         /// Builds the required services and an <see cref="IWebHost"/> which hosts a web application.
+        /// 构建所需的服务和托管 web 应用程序的 <see cref="IWebHost"/>。
         /// </summary>
         public IWebHost Build()
         {
+            // 只允许 Build 一次
             if (_webHostBuilt)
             {
                 throw new InvalidOperationException(Resources.WebHostBuilder_SingleInstance);
             }
             _webHostBuilt = true;
 
+            // 构建公共服务，并实例化 _options
             var hostingServices = BuildCommonServices(out var hostingStartupErrors);
+            // 复制一个 hostingServices
             var applicationServices = hostingServices.Clone();
             var hostingServiceProvider = GetProviderFromFactory(hostingServices);
 
+            // 如果未禁用状态信息，检查是否使用了过时的环境变量并输出警告（默认不禁用）
             if (!_options.SuppressStatusMessages)
             {
                 // Warn about deprecated environment variables
@@ -198,6 +220,7 @@ namespace Microsoft.AspNetCore.Hosting
                 throw;
             }
 
+            // C# 7.0 新特性，局部函数
             IServiceProvider GetProviderFromFactory(IServiceCollection collection)
             {
                 var provider = collection.BuildServiceProvider();
@@ -215,11 +238,17 @@ namespace Microsoft.AspNetCore.Hosting
             }
         }
 
+        /// <summary>
+        /// 构建公共服务
+        /// </summary>
+        /// <param name="hostingStartupErrors"></param>
+        /// <returns></returns>
         [MemberNotNull(nameof(_options))]
         private IServiceCollection BuildCommonServices(out AggregateException? hostingStartupErrors)
         {
             hostingStartupErrors = null;
 
+            // 使用 _config 创建 _options，_options 的属性值基本都来自 _config，详见源码
             _options = new WebHostOptions(_config, Assembly.GetEntryAssembly()?.GetName().Name);
 
             if (!_options.PreventHostingStartup)
@@ -227,6 +256,7 @@ namespace Microsoft.AspNetCore.Hosting
                 var exceptions = new List<Exception>();
 
                 // Execute the hosting startup assemblies
+                // 执行 hosting startup 程序集
                 foreach (var assemblyName in _options.GetFinalHostingStartupAssemblies().Distinct(StringComparer.OrdinalIgnoreCase))
                 {
                     try
@@ -252,9 +282,11 @@ namespace Microsoft.AspNetCore.Hosting
                 }
             }
 
+            // 获得 ContentRootPath（默认是 wwwroot）
             var contentRootPath = ResolveContentRootPath(_options.ContentRootPath, AppContext.BaseDirectory);
 
             // Initialize the hosting environment
+            // 初始化托管环境
             ((IWebHostEnvironment)_hostingEnvironment).Initialize(contentRootPath, _options);
             _context.HostingEnvironment = _hostingEnvironment;
 
@@ -268,6 +300,7 @@ namespace Microsoft.AspNetCore.Hosting
 #pragma warning restore CS0618 // Type or member is obsolete
             services.AddSingleton(_context);
 
+            // 注册 IConfiguration
             var builder = new ConfigurationBuilder()
                 .SetBasePath(_hostingEnvironment.ContentRootPath)
                 .AddConfiguration(_config, shouldDisposeConfiguration: true);
