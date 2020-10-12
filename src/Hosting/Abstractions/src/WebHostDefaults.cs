@@ -10,6 +10,7 @@ namespace Microsoft.AspNetCore.Hosting
     {
         /// <summary>
         /// The configuration key associated with an application name.
+        /// value 通常是 Startup class 的 AssemblyName，详见 WebHostBuilderExtensions.cs 的 UseStartup 方法
         /// </summary>
         public static readonly string ApplicationKey = "applicationName";
 

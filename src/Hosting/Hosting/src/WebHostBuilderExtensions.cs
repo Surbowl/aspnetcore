@@ -70,6 +70,7 @@ namespace Microsoft.AspNetCore.Hosting
 
         /// <summary>
         /// Specify a factory that creates the startup instance to be used by the web host.
+        /// 指定一个 factory，该 factory 创建 web host 使用的启动实例。
         /// </summary>
         /// <param name="hostBuilder">The <see cref="IWebHostBuilder"/> to configure.</param>
         /// <param name="startupFactory">A delegate that specifies a factory for the startup class.</param>

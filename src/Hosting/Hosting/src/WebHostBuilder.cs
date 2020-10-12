@@ -282,7 +282,7 @@ namespace Microsoft.AspNetCore.Hosting
                 }
             }
 
-            // 获得 ContentRootPath（默认是 wwwroot）
+            // 获得 ContentRootPath
             var contentRootPath = ResolveContentRootPath(_options.ContentRootPath, AppContext.BaseDirectory);
 
             // Initialize the hosting environment

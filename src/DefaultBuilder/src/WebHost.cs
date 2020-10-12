@@ -178,8 +178,9 @@ namespace Microsoft.AspNetCore
         public static IWebHostBuilder CreateDefaultBuilder(string[] args)
         {
             var builder = new WebHostBuilder();
-
+            // 配置 Host
             // 如果环境变量未定义 ASPNETCORE_CONTENTROOT，则使用 Directory.GetCurrentDirectory() 的值
+            // 如何修改目录路径 https://blog.csdn.net/Surbowl/article/details/108992419
             if (string.IsNullOrEmpty(builder.GetSetting(WebHostDefaults.ContentRootKey)))
             {
                 builder.UseContentRoot(Directory.GetCurrentDirectory());
@@ -189,9 +190,7 @@ namespace Microsoft.AspNetCore
             {
                 builder.UseConfiguration(new ConfigurationBuilder().AddCommandLine(args).Build());
             }
-            // 注意，上面的 builder.UseConfiguration() 方法与下面的 ConfigureAppConfiguration() 委托修改的不是同一个 IConfiguration
-            // 前者用于构建 Host，后者为 Controller 依赖注入时的 IConfiguration
-            // 后者包含前者的值，详见 WebHostBuilder.cs 第 306 行
+            // 配置 App
             builder.ConfigureAppConfiguration((hostingContext, config) =>
             {
                 var env = hostingContext.HostingEnvironment;
@@ -213,13 +212,14 @@ namespace Microsoft.AspNetCore
                 // 添加环境变量
                 config.AddEnvironmentVariables();
 
-                // 如果有命令行参数，添加到 IConfiguration 中
-                // 此处实现的功能似乎与 190 行重复了......
+                // 其实 Host config 中已有 args 配置，在委托中再次添加是为了让 args 覆盖 json 等文件中的配置，使 args 有最高的优先级
+                // https://github.com/dotnet/aspnetcore/discussions/26733
                 if (args != null)
                 {
                     config.AddCommandLine(args);
                 }
             })
+            // 配置 Logging
             .ConfigureLogging((hostingContext, loggingBuilder) =>
             {
                 loggingBuilder.Configure(options =>
@@ -228,12 +228,15 @@ namespace Microsoft.AspNetCore
                                                         | ActivityTrackingOptions.TraceId
                                                         | ActivityTrackingOptions.ParentId;
                 });
+                // 将 Host 配置中的 Logging section 赋给 loggingBuilder，通常位于 appsettings.*.json
                 loggingBuilder.AddConfiguration(hostingContext.Configuration.GetSection("Logging"));
+                // 在 console 与 debug 输出日志
+                // 如何移除已添加的 LoggingProvider https://blog.csdn.net/Surbowl/article/details/108991231
                 loggingBuilder.AddConsole();
                 loggingBuilder.AddDebug();
                 loggingBuilder.AddEventSourceLogger();
-            }).
-            UseDefaultServiceProvider((context, options) =>
+            })
+            .UseDefaultServiceProvider((context, options) =>
             {
                 options.ValidateScopes = context.HostingEnvironment.IsDevelopment();
             });
