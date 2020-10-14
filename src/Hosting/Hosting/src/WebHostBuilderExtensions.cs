@@ -147,6 +147,8 @@ namespace Microsoft.AspNetCore.Hosting
                     {
                         services.AddSingleton(typeof(IStartup), sp =>
                         {
+                            // Configure 和 ConfigureServices 支持 Configure<EnvironmentName> 和 Configure<EnvironmentName>Services 的环境特定版本
+                            // https://docs.microsoft.com/zh-cn/aspnet/core/fundamentals/environments?view=aspnetcore-5.0#startup-method-conventions
                             var hostingEnvironment = sp.GetRequiredService<IHostEnvironment>();
                             return new ConventionBasedStartup(StartupLoader.LoadMethods(sp, startupType, hostingEnvironment.EnvironmentName));
                         });

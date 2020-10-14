@@ -199,7 +199,8 @@ namespace Microsoft.AspNetCore
                 config.AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
                       .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true, reloadOnChange: true);
 
-                // 如果是开发环境，添加 User Secrets
+                // 开发模式下自动添加机密
+                // https://docs.microsoft.com/zh-cn/aspnet/core/security/app-secrets?view=aspnetcore-5.0&tabs=windows#access-a-secret
                 if (env.IsDevelopment())
                 {
                     var appAssembly = Assembly.Load(new AssemblyName(env.ApplicationName));

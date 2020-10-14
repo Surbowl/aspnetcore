@@ -64,6 +64,8 @@ namespace Microsoft.AspNetCore.Hosting
             }
 
             // 如果没有配置 ASPNETCORE_URLS，则使用 ASPNETCORE_SERVER.URLS
+            // 其中包含服务器应针对请求侦听的端口和协议。
+            // https://docs.microsoft.com/zh-cn/aspnet/core/fundamentals/host/generic-host?view=aspnetcore-5.0#urls
             if (string.IsNullOrEmpty(GetSetting(WebHostDefaults.ServerUrlsKey)))
             {
                 // Try adding legacy url key, never remove this.
@@ -290,6 +292,8 @@ namespace Microsoft.AspNetCore.Hosting
             ((IWebHostEnvironment)_hostingEnvironment).Initialize(contentRootPath, _options);
             _context.HostingEnvironment = _hostingEnvironment;
 
+            // IServiceCollection 是 ServiceDescriptor 对象的集合
+            // https://docs.microsoft.com/zh-cn/aspnet/core/fundamentals/dependency-injection?view=aspnetcore-5.0#service-registration-methods
             var services = new ServiceCollection();
             services.AddSingleton(_options);
             services.AddSingleton<IWebHostEnvironment>(_hostingEnvironment);
@@ -309,6 +313,7 @@ namespace Microsoft.AspNetCore.Hosting
 
             var configuration = builder.Build();
             // register configuration as factory to make it dispose with the service provider
+            // 这就是 Controller 依赖注入的 IConfiguration
             services.AddSingleton<IConfiguration>(_ => configuration);
             _context.Configuration = configuration;
 
